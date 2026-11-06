@@ -37,7 +37,8 @@ width:640px;
 height:360px;
 
 transform-origin:bottom right;
-transform:scale(0.05);
+/* Twitch checks the visible size before allowing autoplay. */
+transform:scale(1);
 
 transition:transform .35s cubic-bezier(.34,1.56,.64,1);
 }
@@ -71,15 +72,16 @@ height:100%;
 
 position:absolute;
 
-left:20px;
-bottom:20px;
+left:0;
+top:100%;
+margin-top:4px;
 
-padding:10px 16px;
+padding:6px 12px;
 
 background:rgba(0,0,0,.65);
 color:white;
 
-font-size:22px;
+font-size:18px;
 font-weight:600;
 
 border-radius:8px;
@@ -118,6 +120,14 @@ const delay=parseFloat(params.get("delay") || "69")
 const duration=parseFloat(params.get("duration") || "10")
 const spawnDelay=parseFloat(params.get("spawnDelay") || "1")
 const parentParam = params.get("parent")
+const build="obs-test-4"
+let statusLabel
+if(params.has("debug")){
+statusLabel=document.createElement("div")
+statusLabel.style.cssText="position:absolute;left:12px;top:12px;color:white;background:#222;padding:8px;font:16px Arial;pointer-events:none"
+document.getElementById("stage").appendChild(statusLabel)
+statusLabel.textContent=`${build}: loading`
+}
 const shell=document.getElementById("preview-shell")
 const preview=document.getElementById("preview")
 const parent = parentParam
@@ -133,53 +143,39 @@ channel:channel,
 width:"100%",
 height:"100%",
 parent:parent,
-muted:true
+autoplay:true,
+muted:false
 
 })
 
-player.addEventListener(Twitch.Player.READY,()=>{
-
-player.play()
-
-setTimeout(()=>{
-try{
-player.setMuted(false)
-}catch(e){}
-},800)
-
-/* add raid banner AFTER playback begins */
-
-const spawnAnimationTime = 350
-
-setTimeout(()=>{
-
-    const banner=document.createElement("div")
-
-    banner.id="raid-banner"
-
-    banner.innerHTML=`Raiding <span>${channel}</span>`
-
-    preview.appendChild(banner)
-
-    }, (spawnDelay*1000) + spawnAnimationTime + 300)
-
+for(const event of [Twitch.Player.READY,Twitch.Player.PLAYING,Twitch.Player.PAUSE,Twitch.Player.PLAYBACK_BLOCKED,Twitch.Player.OFFLINE]){
+player.addEventListener(event,()=>{
+console.log(build,event)
+if(statusLabel) statusLabel.textContent=`${build}: ${event}`
 })
+}
 
-/* spawn animation */
+let presentationStarted=false
 
-setTimeout(()=>{
+player.addEventListener(Twitch.Player.PLAYING,()=>{
 
-requestAnimationFrame(()=>{
-shell.style.transform="scale(1)"
-})
+/* Do not switch mute state during playback: that can trigger an autoplay pause. */
 
-},spawnDelay*1000)
+if(presentationStarted) return
+presentationStarted=true
+
+/* Keep the banner below the video so it does not interrupt Twitch autoplay. */
+const banner=document.createElement("div")
+banner.id="raid-banner"
+banner.textContent=`Raiding ${channel}`
+shell.appendChild(banner)
 
 /* fullscreen animation */
 
 setTimeout(()=>{
 
 const rect=shell.getBoundingClientRect()
+banner.remove()
 
 const scaleX=window.innerWidth/rect.width
 const scaleY=window.innerHeight/rect.height
@@ -201,6 +197,12 @@ shell.style.transform=`translate(50%,50%) scale(${scale})`
 preview.style.borderRadius="0px"
 
 },delay*1000)
+
+})
+
+player.addEventListener(Twitch.Player.PLAYBACK_BLOCKED,()=>{
+console.warn("Twitch blocked playback. Check OBS browser-source autoplay permissions.")
+})
 
 </script>
 
