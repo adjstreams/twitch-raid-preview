@@ -31,12 +31,12 @@ overflow:hidden;
 position:absolute;
 
 right:40px;
-bottom:40px;
+top:40px;
 
 width:640px;
 height:360px;
 
-transform-origin:bottom right;
+transform-origin:center;
 /* Twitch checks the visible size before allowing autoplay. */
 transform:scale(1);
 
@@ -185,14 +185,13 @@ const scale=Math.max(scaleX,scaleY)
 shell.style.transition=`
 transform ${duration}s cubic-bezier(.22,1.15,.36,1),
 right ${duration}s cubic-bezier(.22,1.15,.36,1),
-bottom ${duration}s cubic-bezier(.22,1.15,.36,1)
+top ${duration}s cubic-bezier(.22,1.15,.36,1)
 `
 
 shell.style.right="50%"
-shell.style.bottom="50%"
-shell.style.transformOrigin="center"
+shell.style.top="50%"
 
-shell.style.transform=`translate(50%,50%) scale(${scale})`
+shell.style.transform=`translate(50%,-50%) scale(${scale})`
 
 preview.style.borderRadius="0px"
 
